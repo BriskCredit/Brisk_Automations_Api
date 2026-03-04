@@ -1,0 +1,131 @@
+name: Deploy to Hostinger
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image_name: ${{ steps.lowercase.outputs.image_name }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Convert repo name to lowercase
+        id: lowercase
+        run: echo "image_name=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.image_name }}
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Copy files to Hostinger
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HOSTINGER_HOST }}
+          username: ${{ secrets.HOSTINGER_USERNAME }}
+          password: ${{ secrets.HOSTINGER_SSH_PASSWORD }}
+          source: "compose.yaml"
+          target: ~/app
+
+      - name: Deploy to Hostinger
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          IMAGE_NAME: ${{ needs.build-and-push.outputs.image_name }}
+        with:
+          host: ${{ secrets.HOSTINGER_HOST }}
+          username: ${{ secrets.HOSTINGER_USERNAME }}
+          password: ${{ secrets.HOSTINGER_SSH_PASSWORD }}
+          envs: IMAGE_NAME
+          script: |
+            cd ~/app
+            
+            # Login to GitHub Container Registry
+            echo ${{ secrets.GH_PAT }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            # Pull the latest image
+            docker pull ghcr.io/${IMAGE_NAME}:latest
+            
+            # Create .env file from secrets
+            cat > .env << EOF
+            # Docker Image
+            IMAGE_TAG=ghcr.io/${IMAGE_NAME}:latest
+            
+            # Environment
+            ENVIRONMENT=production
+            PORT=${{ secrets.PORT }}
+            CORS_ORIGIN=${{ secrets.CORS_ORIGIN }}
+            BASE_URL=${{ secrets.BASE_URL }}
+            
+            # Local Database
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            
+            # Brisk MySQL Databases
+            BRISK_DB_HOST=${{ secrets.BRISK_DB_HOST }}
+            MYSQL_PORT=${{ secrets.MYSQL_PORT }}
+            BRISK_CORE_DB=${{ secrets.BRISK_CORE_DB }}
+            BRISK_CORE_DB_USER=${{ secrets.BRISK_CORE_DB_USER }}
+            BRISK_CORE_DB_PASSWORD=${{ secrets.BRISK_CORE_DB_PASSWORD }}
+            BRISK_MAIN_DB=${{ secrets.BRISK_MAIN_DB }}
+            BRISK_MAIN_DB_USER=${{ secrets.BRISK_MAIN_DB_USER }}
+            BRISK_MAIN_DB_PASSWORD=${{ secrets.BRISK_MAIN_DB_PASSWORD }}
+            
+            # Gmail SMTP
+            GMAIL_EMAIL=${{ secrets.GMAIL_EMAIL }}
+            GMAIL_APP_PASSWORD=${{ secrets.GMAIL_APP_PASSWORD }}
+            
+            # OpenAI
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            EOF
+            
+            # Stop existing containers
+            docker compose down || true
+            
+            # Start with new image
+            docker compose up -d
+            
+            # Clean up old images
+            docker image prune -f

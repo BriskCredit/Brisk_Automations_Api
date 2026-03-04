@@ -1,0 +1,35 @@
+name: Brisk Automations API
+services:
+  api:
+    image: ${IMAGE_TAG:-brisk-automations-api}
+    container_name: brisk-automations-api
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8000}:8000"
+    env_file:
+      - .env
+    environment:
+      - FILE_STORAGE_PATH=/app/uploads
+    volumes:
+      # Persist uploads directory
+      - uploads_data:/app/uploads
+      # Persist SQLite database (if using SQLite)
+      - db_data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - brisk-network
+
+volumes:
+  uploads_data:
+    driver: local
+  db_data:
+    driver: local
+
+networks:
+  brisk-network:
+    driver: bridge
