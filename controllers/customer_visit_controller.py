@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, EmailStr
+from pydantic import EmailStr
 from typing import List, Optional
 from datetime import datetime
 from sqlalchemy.orm import Session
@@ -8,44 +8,12 @@ from common.recipient_service import RecipientService
 from container.dependencies import get_brisk_data_service, get_customer_visit_processor_cron
 from modules.customer_visit_processor.service import CustomerVisitProcessor
 from modules.customer_visit_processor.cron import REPORT_TYPE_CODE, REPORT_TYPE_NAME
+from middleware.auth import get_current_user
+from models.user import User
+from schemas.reports import RunRequest, RunResponse, StatusResponse, PreviewResponse
 
 
-router = APIRouter(prefix="/customer-visit", tags=["Customer Visit"])
-
-
-# =============================================================================
-# Pydantic Schemas
-# =============================================================================
-
-class RunRequest(BaseModel):
-    """Request body for manual run."""
-    override_recipients: Optional[List[EmailStr]] = None
-
-
-class RunResponse(BaseModel):
-    """Response for manual run."""
-    success: bool
-    message: str
-    rows: Optional[int] = None
-    file_path: Optional[str] = None
-
-
-class StatusResponse(BaseModel):
-    """Status of the customer visit report type."""
-    report_type_code: str
-    report_type_name: str
-    is_active: bool
-    recipient_count: int
-    recipients: List[dict]
-
-
-class PreviewResponse(BaseModel):
-    """Response for preview endpoint."""
-    success: bool
-    generated_at: datetime
-    row_count: int
-    columns: List[str]
-    summary: List[dict]
+router = APIRouter(prefix="/customer-visit", tags=["Customer Visit"], dependencies=[Depends(get_current_user)])
 
 
 # =============================================================================

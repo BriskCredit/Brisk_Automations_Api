@@ -1,9 +1,8 @@
 import os
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form, status, BackgroundTasks
-from pydantic import BaseModel, EmailStr, Field
-from typing import List, Optional
-from datetime import datetime
+from pydantic import EmailStr
+from typing import Optional
 from sqlalchemy.orm import Session
 from database.session import get_db
 from modules.job_applications.job_service import JobService
@@ -14,56 +13,16 @@ from models.job import JobStatus, AIAnalysisStatus
 from common.pagination import create_paginated_response
 from common.file_storage_service import FileStorageService
 from utils.logger import get_logger
+from schemas.jobs import (
+    PublicJobResponse,
+    PublicJobListResponse,
+    ApplicationSubmitResponse,
+)
+from schemas.common import MessageResponse
 
 logger = get_logger("app.controllers.jobs")
 
 router = APIRouter(prefix="/jobs", tags=["Jobs - Public"])
-
-
-# =============================================================================
-# Pydantic Schemas
-# =============================================================================
-
-class PublicJobResponse(BaseModel):
-    """Public response schema for a job (excludes admin-only fields)."""
-    id: int
-    title: str
-    summary: Optional[str]
-    responsibilities: Optional[str]
-    requirements: Optional[str]
-    qualifications: Optional[str]
-    benefits: Optional[str]
-    location: Optional[str]
-    department: Optional[str]
-    employment_type: Optional[str]
-    published_at: Optional[datetime]
-    
-    class Config:
-        from_attributes = True
-
-
-class PublicJobListResponse(BaseModel):
-    """Paginated response for public job list."""
-    items: List[PublicJobResponse]
-    total: int
-    page: int
-    page_size: int
-    total_pages: int
-    has_next: bool
-    has_prev: bool
-
-
-class ApplicationSubmitResponse(BaseModel):
-    """Response after submitting an application."""
-    success: bool
-    message: str
-    application_id: Optional[int] = None
-
-
-class MessageResponse(BaseModel):
-    """Generic message response."""
-    message: str
-    success: bool = True
 
 
 # =============================================================================

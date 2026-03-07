@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, EmailStr
+from pydantic import EmailStr
 from typing import List, Optional
 from datetime import datetime
 from sqlalchemy.orm import Session
@@ -8,55 +8,16 @@ from common.recipient_service import RecipientService
 from container.dependencies import get_brisk_data_service, get_customer_calls_cron
 from modules.customer_calls.service import CustomerCallsProcessor
 from modules.customer_calls.cron import REPORT_TYPE_CODE, REPORT_TYPE_NAME
+from middleware.auth import get_current_user
+from models.user import User
+from schemas.reports import RunRequest, RunResponse, StatusResponse, PreviewResponse
 
 
-router = APIRouter(prefix="/customer-calls", tags=["Customer Calls"])
+router = APIRouter(prefix="/customer-calls", tags=["Customer Calls"], dependencies=[Depends(get_current_user)])
 
 
 # =============================================================================
-# Pydantic Schemas
-# =============================================================================
-
-class RunRequest(BaseModel):
-    """Request body for manual run."""
-    override_recipients: Optional[List[EmailStr]] = None
-
-
-class RunResponse(BaseModel):
-    """Response for manual run."""
-    success: bool
-    message: str
-    rows: Optional[int] = None
-    file_path: Optional[str] = None
-
-
-class StatusResponse(BaseModel):
-    """Status of the customer calls report type."""
-    report_type_code: str
-    report_type_name: str
-    is_active: bool
-    recipient_count: int
-    recipients: List[dict]
-
-
-class PreviewSummary(BaseModel):
-    """Summary of preview data."""
-    branch: str
-    d7: Optional[str] = None
-    d30: Optional[str] = None
-    dd_30: Optional[str] = None
-    dd_60: Optional[str] = None
-
-
-class PreviewResponse(BaseModel):
-    """Response for preview endpoint."""
-    success: bool
-    generated_at: datetime
-    row_count: int
-    columns: List[str]
-    summary: List[dict]
-
-
+# Endpoints
 # =============================================================================
 # Endpoints
 # =============================================================================

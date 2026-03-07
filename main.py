@@ -5,7 +5,7 @@ from middleware.logger import LoggingMiddleware
 from utils.logger import setup_logging, get_logger
 from utils.scheduler import scheduler_service
 from container.dependencies import get_customer_visit_processor_cron, get_customer_calls_cron
-from controllers import admin_router, customer_calls_router, customer_visit_router, admin_jobs_router, jobs_router
+from controllers import admin_router, customer_calls_router, customer_visit_router, admin_jobs_router, jobs_router, auth_router
 from fastapi.middleware.cors import CORSMiddleware
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 import uvicorn
@@ -129,6 +129,7 @@ def create_app() -> FastAPI:
     app.mount("/files", StaticFiles(directory=str(uploads_dir)), name="files")
 
     # Register routers
+    app.include_router(auth_router, prefix="/api/v1")
     app.include_router(admin_router, prefix="/api/v1")
     app.include_router(customer_calls_router, prefix="/api/v1")
     app.include_router(customer_visit_router, prefix="/api/v1")

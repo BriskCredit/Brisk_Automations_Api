@@ -28,7 +28,7 @@ if config.config_file_name is not None:
 
 # Import all models to register them with SQLAlchemy metadata
 from database.session import Base
-from models import ReportRecipient, ReportType, ReportFile  # noqa: F401
+from models import ReportRecipient, ReportType, ReportFile, Job, JobApplication, User, Invite  # noqa: F401
 
 # add your model's MetaData object here
 # for 'autogenerate' support

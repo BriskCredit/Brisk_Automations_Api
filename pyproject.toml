@@ -19,6 +19,8 @@ dependencies = [
     "pymupdf>=1.24.0",
     "openai>=1.0.0",
     "python-multipart>=0.0.9",
+    "bcrypt>=4.0.0",
+    "pyjwt>=2.8.0",
 ]
 
 [project.optional-dependencies]
@@ -33,7 +35,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["controllers", "modules", "database", "middleware", "utils", "container", "common"]
+packages = ["controllers", "modules", "database", "middleware", "utils", "container", "common", "schemas", "models"]
 
 [tool.uv]
 dev-dependencies = [
