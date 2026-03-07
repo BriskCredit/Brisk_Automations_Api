@@ -96,9 +96,9 @@ jobs:
             
             # Environment
             ENVIRONMENT=production
-            PORT=${{ secrets.PORT }}
             CORS_ORIGIN=${{ secrets.CORS_ORIGIN }}
-            BASE_URL=${{ secrets.BASE_URL }}
+            JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+            FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
             
             # Local Database
             DATABASE_URL=${{ secrets.DATABASE_URL }}
