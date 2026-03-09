@@ -1,4 +1,5 @@
 from datetime import datetime
+from pathlib import Path
 import pandas as pd
 from typing import TYPE_CHECKING, Optional, Dict
 from utils.logger import get_logger
@@ -184,7 +185,9 @@ class CustomerCallsProcessor:
         
         # Generate dynamic filename
         today = datetime.now()
-        filename = f"call_dialer_report_{today.strftime('%B_%d').lower()}.xlsx"
+        temp_dir = Path("uploads/temp")
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        filename = temp_dir / f"call_dialer_report_{today.strftime('%B_%d').lower()}.xlsx"
         
         with pd.ExcelWriter(filename, engine='xlsxwriter') as writer:
             workbook = writer.book
@@ -317,4 +320,4 @@ class CustomerCallsProcessor:
                 ws.set_row(2, 25)
         
         logger.info(f"Report saved to: {filename}")
-        return filename
+        return str(filename)

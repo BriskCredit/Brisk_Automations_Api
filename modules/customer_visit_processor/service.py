@@ -1,4 +1,5 @@
 from datetime import datetime
+from pathlib import Path
 import pandas as pd
 from typing import TYPE_CHECKING
 from utils.logger import get_logger
@@ -191,7 +192,9 @@ class CustomerVisitProcessor:
         
         # Generate dynamic filename: customer_visits_report_march_02.xlsx
         today = datetime.now()
-        filename = f"customer_visits_report_{today.strftime('%B_%d').lower()}.xlsx"
+        temp_dir = Path("uploads/temp")
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        filename = temp_dir / f"customer_visits_report_{today.strftime('%B_%d').lower()}.xlsx"
         
         with pd.ExcelWriter(filename, engine='xlsxwriter') as writer:
             # Write data starting at row 2 (leave row 1 for title)
@@ -280,4 +283,4 @@ class CustomerVisitProcessor:
             worksheet.set_row(2, 25)
         
         logger.info(f"Report saved to: {filename}")
-        return filename
+        return str(filename)
