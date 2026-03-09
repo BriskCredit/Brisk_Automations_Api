@@ -116,7 +116,8 @@ class FileStorageService:
         # Get file info
         file_size = dest_path.stat().st_size
         relative_path = dest_path.relative_to(self.base_path)
-        file_url = f"{self.base_url.rstrip('/')}/files/{relative_path.as_posix()}"
+        # Store relative URL path (frontend will prepend base URL)
+        file_url = f"/files/{relative_path.as_posix()}"
         
         logger.info(f"Saved file: {final_filename} ({file_size} bytes)")
         
@@ -172,9 +173,9 @@ class FileStorageService:
             relative_path: Relative path from storage root
             
         Returns:
-            Full URL for the file
+            Relative URL path for the file (frontend prepends base URL)
         """
-        return f"{self.base_url.rstrip('/')}/files/{relative_path}"
+        return f"/files/{relative_path}"
     
     def list_files(
         self, 
